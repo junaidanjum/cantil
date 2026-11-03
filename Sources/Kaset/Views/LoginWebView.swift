@@ -7,9 +7,15 @@ struct LoginWebView: NSViewRepresentable {
 
     /// Callback when navigation completes to YouTube Music.
     var onNavigationToYouTubeMusic: (() -> Void)?
+    var onOriginChange: ((String?) -> Void)?
+    var onNavigationBlocked: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onNavigationToYouTubeMusic: self.onNavigationToYouTubeMusic)
+        Coordinator(
+            onNavigationToYouTubeMusic: self.onNavigationToYouTubeMusic,
+            onOriginChange: self.onOriginChange,
+            onNavigationBlocked: self.onNavigationBlocked
+        )
     }
 
     func makeNSView(context: Context) -> WKWebView {
@@ -37,16 +43,66 @@ struct LoginWebView: NSViewRepresentable {
 
     class Coordinator: NSObject, WKNavigationDelegate {
         var onNavigationToYouTubeMusic: (() -> Void)?
+        var onOriginChange: ((String?) -> Void)?
+        var onNavigationBlocked: (() -> Void)?
 
-        init(onNavigationToYouTubeMusic: (() -> Void)?) {
+        init(
+            onNavigationToYouTubeMusic: (() -> Void)?,
+            onOriginChange: ((String?) -> Void)? = nil,
+            onNavigationBlocked: (() -> Void)? = nil
+        ) {
             self.onNavigationToYouTubeMusic = onNavigationToYouTubeMusic
+            self.onOriginChange = onOriginChange
+            self.onNavigationBlocked = onNavigationBlocked
+        }
+
+        func webView(
+            _: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            // Popups have no visible origin bar. Do not open them or forward
+            // credential-bearing URLs to another application.
+            guard navigationAction.targetFrame != nil,
+                  !navigationAction.shouldPerformDownload,
+                  LoginNavigationPolicy.allows(
+                      navigationAction.request.url,
+                      isMainFrame: navigationAction.targetFrame?.isMainFrame ?? true
+                  )
+            else {
+                self.onNavigationBlocked?()
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
+        }
+
+        func webView(
+            _: WKWebView,
+            decidePolicyFor navigationResponse: WKNavigationResponse,
+            decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+        ) {
+            guard navigationResponse.canShowMIMEType,
+                  LoginNavigationPolicy.allows(navigationResponse.response.url, isMainFrame: navigationResponse.isForMainFrame)
+            else {
+                self.onNavigationBlocked?()
+                decisionHandler(.cancel)
+                return
+            }
+            decisionHandler(.allow)
+        }
+
+        func webView(_ webView: WKWebView, didCommit _: WKNavigation!) {
+            self.onOriginChange?(LoginNavigationPolicy.allows(webView.url) ? webView.url?.host : nil)
+        }
+
+        func webView(_: WKWebView, didStartProvisionalNavigation _: WKNavigation!) {
+            self.onOriginChange?(nil)
         }
 
         func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
             // Check if we've navigated to YouTube Music
-            if let url = webView.url,
-               url.host?.contains("music.youtube.com") == true
-            {
+            if LoginNavigationPolicy.completesLogin(webView.url) {
                 self.onNavigationToYouTubeMusic?()
             }
         }

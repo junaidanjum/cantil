@@ -10,6 +10,8 @@ struct LoginSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var isCheckingLogin = false
+    @State private var loginHost: String?
+    @State private var navigationBlocked = false
     @State private var didCaptureInitialLoginState = false
     @State private var didCompleteLogin = false
     @State private var loginAttemptID: LoginAttemptID?
@@ -35,9 +37,22 @@ struct LoginSheet: View {
             if self.authService.isCookieRestoreUnavailable || self.authService.loginCleanupRequired {
                 self.loginRecoveryView
             } else if self.didCaptureInitialLoginState {
-                LoginWebView(onNavigationToYouTubeMusic: {
-                    self.checkForSuccessfulLogin()
-                })
+                if let loginHost = self.loginHost {
+                    Label(loginHost, systemImage: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                }
+                if self.navigationBlocked {
+                    Text("This sign-in page was blocked. Close this window and try again.")
+                        .font(.callout)
+                        .padding()
+                }
+                LoginWebView(
+                    onNavigationToYouTubeMusic: { self.checkForSuccessfulLogin() },
+                    onOriginChange: { host in self.loginHost = host },
+                    onNavigationBlocked: { self.navigationBlocked = true }
+                )
             } else {
                 ProgressView()
                     .controlSize(.regular)

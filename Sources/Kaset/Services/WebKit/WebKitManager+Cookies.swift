@@ -113,7 +113,7 @@ enum KeychainCookieStorage {
         }
     #endif
 
-    /// Explicit YouTube/Google session-cookie allowlist used for native API auth.
+    /// Explicit YouTube session-cookie allowlist used for native API auth.
     static let authCookieNames = Set([
         "SAPISID", "__Secure-3PAPISID", "__Secure-1PAPISID",
         "SID", "HSID", "SSID", "APISID",
@@ -143,8 +143,9 @@ enum KeychainCookieStorage {
     }
 
     static func isAuthCookie(_ cookie: HTTPCookie) -> Bool {
-        self.authCookieNames.contains(cookie.name)
-            && self.isAllowedAuthCookieDomain(cookie.domain)
+        let domain = cookie.domain.lowercased().drop(while: { $0 == "." })
+        return self.authCookieNames.contains(cookie.name)
+            && (domain == "youtube.com" || domain.hasSuffix(".youtube.com"))
     }
 
     /// Broader in-memory login-transaction boundary. These cookies are never

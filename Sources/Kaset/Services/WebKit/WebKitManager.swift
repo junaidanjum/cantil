@@ -843,6 +843,36 @@ private final class SessionSwitchNavigationDriver: NSObject, WKNavigationDelegat
         continuation?.resume(with: result)
     }
 
+    func webView(
+        _: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        let allowed = navigationAction.targetFrame != nil
+            && !navigationAction.shouldPerformDownload
+            && LoginNavigationPolicy.allows(
+                navigationAction.request.url,
+                isMainFrame: navigationAction.targetFrame?.isMainFrame ?? true
+            )
+        decisionHandler(allowed ? .allow : .cancel)
+        if !allowed {
+            self.complete(with: .failure(SessionSwitchError.navigationFailed(underlying: "Blocked signin navigation")))
+        }
+    }
+
+    func webView(
+        _: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+        let allowed = navigationResponse.canShowMIMEType
+            && LoginNavigationPolicy.allows(navigationResponse.response.url, isMainFrame: navigationResponse.isForMainFrame)
+        decisionHandler(allowed ? .allow : .cancel)
+        if !allowed {
+            self.complete(with: .failure(SessionSwitchError.navigationFailed(underlying: "Blocked signin response")))
+        }
+    }
+
     func webView(_: WKWebView, didFinish _: WKNavigation!) {
         self.complete(with: .success(()))
     }
