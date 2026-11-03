@@ -9,7 +9,6 @@ struct WhatsNewView: View {
     private enum Layout {
         static let sheetWidth: CGFloat = 640
         static let sheetHeight: CGFloat = 620
-        static let contentMinHeight: CGFloat = 280
     }
 
     @Environment(\.colorScheme) private var colorScheme
@@ -88,31 +87,20 @@ struct WhatsNewView: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(self.colorScheme == .dark ? 0.88 : 0.96))
         }
+        .clipShape(.rect(cornerRadius: 28, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .strokeBorder(.white.opacity(self.colorScheme == .dark ? 0.08 : 0.28))
         }
     }
 
-    @ViewBuilder
     private var contentContainer: some View {
-        if self.whatsNew.releaseNotes != nil {
-            ScrollView {
-                self.contentView
-                    .padding(24)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        } else {
+        ScrollView {
             self.contentView
                 .padding(24)
-                .frame(
-                    maxWidth: .infinity,
-                    minHeight: Self.Layout.contentMinHeight,
-                    maxHeight: .infinity,
-                    alignment: .topLeading
-                )
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder
