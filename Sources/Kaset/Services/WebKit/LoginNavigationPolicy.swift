@@ -2,7 +2,7 @@ import Foundation
 
 enum LoginNavigationPolicy {
     private static let allowedHosts: Set<String> = [
-        "accounts.google.com", "consent.google.com", "consent.youtube.com",
+        "accounts.google.com", "accounts.youtube.com", "consent.google.com", "consent.youtube.com",
         "youtube.com", "www.youtube.com", "music.youtube.com",
     ]
 

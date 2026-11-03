@@ -5,6 +5,7 @@ import Testing
 struct LoginNavigationPolicyTests {
     @Test(arguments: [
         "https://accounts.google.com/ServiceLogin",
+        "https://accounts.youtube.com/accounts/SetSID",
         "https://consent.google.com/",
         "https://consent.youtube.com/",
         "https://www.youtube.com/signin",
@@ -19,6 +20,7 @@ struct LoginNavigationPolicyTests {
     @Test(arguments: [
         "http://accounts.google.com/",
         "https://accounts.google.com.attacker.example/",
+        "https://accounts.youtube.com.attacker.example/accounts/SetSID",
         "https://evilgoogle.com/",
         "https://music.youtube.com.attacker.example/",
         "https://attacker.example/music.youtube.com",
