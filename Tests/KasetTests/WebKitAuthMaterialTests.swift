@@ -4,6 +4,22 @@ import Testing
 
 @Suite(.tags(.service))
 struct WebKitAuthMaterialTests {
+    @Test("Saved session contains YouTube credentials without Google or unrelated cookies")
+    func archiveContainsOnlyYouTubeCookies() throws {
+        let cookies = try [
+            Self.cookie(name: "SAPISID", value: "mock-youtube", domain: ".youtube.com"),
+            Self.cookie(name: "SID", value: "mock-google", domain: ".google.com"),
+            Self.cookie(name: "SID", value: "mock-accounts", domain: "accounts.google.com"),
+            Self.cookie(name: "SID", value: "mock-lookalike", domain: "youtube.com.example.com"),
+            Self.cookie(name: "PREF", value: "mock-pref", domain: ".youtube.com"),
+        ]
+        let archive = try #require(KeychainCookieStorage.makeArchiveData(from: cookies))
+        let restored = KeychainCookieStorage.decodeCookies(from: archive.data)
+        #expect(archive.cookieCount == 1)
+        #expect(restored.map(\.name) == ["SAPISID"])
+        #expect(restored.first?.value == "mock-youtube")
+    }
+
     @Test("Auth material derives header and SAPISID from one snapshot")
     func authMaterialFromSnapshot() throws {
         let cookies = try [
@@ -60,7 +76,7 @@ struct WebKitAuthMaterialTests {
         #expect(matched == ["A", "B", "C"])
     }
 
-    @Test("Auth cookie persistence accepts only Google and YouTube domain boundaries")
+    @Test("Only YouTube auth cookies persist; Google cookies remain inside login rollback")
     func authCookiePersistenceDomainBoundaries() throws {
         #expect(KeychainCookieStorage.isAllowedAuthCookieDomain("youtube.com"))
         #expect(KeychainCookieStorage.isAllowedAuthCookieDomain(".youtube.com"))
@@ -81,7 +97,8 @@ struct WebKitAuthMaterialTests {
             domain: "evilgoogle.com"
         )
 
-        #expect(KeychainCookieStorage.isAuthCookie(validCookie))
+        #expect(!KeychainCookieStorage.isAuthCookie(validCookie))
+        #expect(KeychainCookieStorage.isLoginSessionCookie(validCookie))
         #expect(!KeychainCookieStorage.isAuthCookie(lookalikeCookie))
 
         let gaiaCookie = try Self.cookie(

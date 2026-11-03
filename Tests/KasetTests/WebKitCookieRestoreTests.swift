@@ -5,6 +5,51 @@ import Testing
 @Suite("WebKit cookie restoration", .serialized, .tags(.service))
 @MainActor
 struct WebKitCookieRestoreTests {
+    @Test("Older backups discard Google cookies; failed migration preserves the live session", arguments: [true, false])
+    func legacyArchiveDropsGoogleCookies(canSave: Bool) async throws {
+        let youtube = try Self.makeCookie(name: "SAPISID", value: "mock-youtube", domain: ".youtube.com")
+        let google = try Self.makeCookie(name: "SID", value: "mock-google", domain: ".google.com")
+        let serialized = try [youtube, google].map { cookie in
+            let properties = try #require(cookie.properties)
+            let strings = Dictionary(uniqueKeysWithValues: properties.map { ($0.key.rawValue, $0.value) })
+            return try NSKeyedArchiver.archivedData(withRootObject: strings, requiringSecureCoding: false)
+        }
+        let legacyArchive = try NSKeyedArchiver.archivedData(withRootObject: serialized as NSArray, requiringSecureCoding: true)
+        let archiveBox = InMemoryCookieArchiveBox()
+        archiveBox.store(legacyArchive)
+        let storage = CookieArchiveStorage(
+            save: { data, _ in
+                guard canSave else { return false }
+                archiveBox.store(data)
+                return true
+            },
+            loadResult: { archiveBox.load().map(CookieArchiveLoadResult.data) ?? .notFound },
+            delete: { archiveBox.store(nil)
+                return true
+            }
+        )
+        let manager = WebKitManager.makeTestInstance(cookieArchiveStorage: storage)
+        await manager.dataStore.httpCookieStore.setCookie(google)
+
+        let result = await manager.restoreAuthCookiesFromBackup(expectedGeneration: manager.authCookieOperationFence.generation)
+        let liveCookies = await manager.dataStore.httpCookieStore.allCookies()
+        let savedData = try #require(await manager.cookieArchiveQueue.persistedArchiveData())
+        let savedCookies = KeychainCookieStorage.decodeCookies(from: savedData)
+        _ = await manager.clearAllData()
+
+        if canSave {
+            #expect(result == .ready)
+            #expect(liveCookies.contains { $0.domain.contains("google.com") } == false)
+            #expect(liveCookies.first { $0.name == "SAPISID" }?.value == "mock-youtube")
+            #expect(savedCookies.count == 1)
+            #expect(savedCookies.first?.name == "SAPISID")
+        } else {
+            #expect(result == .unavailable)
+            #expect(liveCookies.first { $0.name == "SID" }?.value == "mock-google")
+            #expect(savedData == legacyArchive)
+        }
+    }
+
     @Test("Missing archive preserves a valid live primary session")
     func missingArchivePreservesValidLivePrimarySession() async throws {
         let livePrimaryCookie = try #require(HTTPCookie(properties: [
@@ -533,13 +578,13 @@ struct WebKitCookieRestoreTests {
         let baselineCompanion = try #require(HTTPCookie(properties: [
             .name: "SID",
             .value: "baseline-companion",
-            .domain: ".google.com",
+            .domain: ".youtube.com",
             .path: "/",
         ]))
         let refreshedCompanion = try #require(HTTPCookie(properties: [
             .name: "SID",
             .value: "refreshed-companion",
-            .domain: ".google.com",
+            .domain: ".youtube.com",
             .path: "/",
         ]))
         let baselineSnapshot = try #require(CookieArchiveSnapshot.make(

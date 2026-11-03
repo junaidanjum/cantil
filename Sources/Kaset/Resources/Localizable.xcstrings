@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "This sign-in page isn't supported. Try a personal Google account instead.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This sign-in page isn't supported. Try a personal Google account instead."
+          }
+        }
+      }
+    },
     "Appearance": {
       "localizations": {
         "ar": {

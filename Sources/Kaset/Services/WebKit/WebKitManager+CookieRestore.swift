@@ -108,17 +108,38 @@ extension WebKitManager {
             self.logger.info("No cookies found in archive storage; preserving the live WebKit session")
             return .ready
         case let .data(archiveData):
+            let preparedArchive = await self.prepareArchiveForRestore(archiveData, expectedGeneration: expectedGeneration)
+            guard self.canContinueAuthCookieOperation(expectedGeneration: expectedGeneration) else { return .failed }
+            guard let restoreData = preparedArchive else { return .unavailable }
             // The persisted archive is the source of truth for login-session
             // state. Preserve unrelated Google/YouTube preference cookies.
             guard await self.clearLiveLoginSessionCookies(
                 expectedGeneration: expectedGeneration
             ) else { return .failed }
             let didRestore = await self.restoreArchivedAuthCookies(
-                archiveData,
+                restoreData,
                 expectedGeneration: expectedGeneration
             )
             return didRestore ? .ready : .failed
         }
+    }
+
+    private func prepareArchiveForRestore(_ archiveData: Data, expectedGeneration: UInt64) async -> Data? {
+        let archivedCookies = KeychainCookieStorage.decodeCookies(from: archiveData)
+        let retainedCookies = archivedCookies.filter { KeychainCookieStorage.isValidAuthCookie($0) }
+        guard retainedCookies.count != archivedCookies.count,
+              let sanitized = KeychainCookieStorage.makeArchiveData(from: retainedCookies)
+        else { return archiveData }
+
+        let generation = await self.cookieArchiveQueue.reserveGeneration()
+        guard self.canContinueAuthCookieOperation(expectedGeneration: expectedGeneration) else { return nil }
+        let result = await self.cookieArchiveQueue.save(
+            archiveData: sanitized.data,
+            cookieCount: sanitized.cookieCount,
+            generation: generation
+        )
+        guard self.canContinueAuthCookieOperation(expectedGeneration: expectedGeneration), result.isPersisted else { return nil }
+        return sanitized.data
     }
 
     private func restoreArchivedAuthCookies(
@@ -126,6 +147,7 @@ extension WebKitManager {
         expectedGeneration: UInt64
     ) async -> Bool {
         let keychainCookies = KeychainCookieStorage.decodeCookies(from: archiveData)
+            .filter { KeychainCookieStorage.isValidAuthCookie($0) }
         guard !keychainCookies.isEmpty else {
             self.logger.error("Cookie archive contained no restorable authentication cookies")
             _ = await self.quarantineFailedAuthCookieRestore(
