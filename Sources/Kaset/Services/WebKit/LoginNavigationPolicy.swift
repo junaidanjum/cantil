@@ -21,7 +21,7 @@ enum LoginNavigationPolicy {
         }
         // Google's bot checks load inside a frame, never as the sign-in page.
         return !isMainFrame
-            && ["www.google.com", "www.recaptcha.net"].contains(host)
+            && ["www.google.com", "recaptcha.google.com", "www.recaptcha.net"].contains(host)
             && url.path.hasPrefix("/recaptcha/")
     }
 

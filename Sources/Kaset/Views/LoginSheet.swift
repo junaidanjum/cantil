@@ -44,7 +44,7 @@ struct LoginSheet: View {
                         .padding(.vertical, 8)
                 }
                 if self.navigationBlocked {
-                    Text("This sign-in page was blocked. Close this window and try again.")
+                    Text("This sign-in page isn't supported. Try a personal Google account instead.")
                         .font(.callout)
                         .padding()
                 }

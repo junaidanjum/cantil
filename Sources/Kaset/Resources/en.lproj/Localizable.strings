@@ -109,4 +109,4 @@
 "Request a connection to its companion app." = "Request a connection to its companion app.";
 "It could read and share information shown while you’re signed in. Only turn it on if you trust it." = "It could read and share information shown while you’re signed in. Only turn it on if you trust it.";
 
-"This sign-in page was blocked. Close this window and try again." = "This sign-in page was blocked. Close this window and try again.";
+"This sign-in page isn't supported. Try a personal Google account instead." = "This sign-in page isn't supported. Try a personal Google account instead.";

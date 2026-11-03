@@ -41,7 +41,12 @@ struct LoginNavigationPolicyTests {
 
     @Test
     func captchaFramesCannotBecomeSignInPages() {
-        for address in ["https://www.google.com/recaptcha/api2/anchor", "https://www.recaptcha.net/recaptcha/api2/bframe", "about:blank"] {
+        for address in [
+            "https://www.google.com/recaptcha/api2/anchor",
+            "https://recaptcha.google.com/recaptcha/api2/anchor",
+            "https://www.recaptcha.net/recaptcha/api2/bframe",
+            "about:blank",
+        ] {
             let url = URL(string: address)
             #expect(LoginNavigationPolicy.allows(url, isMainFrame: false))
             #expect(!LoginNavigationPolicy.allows(url))

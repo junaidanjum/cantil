@@ -1,12 +1,12 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "This sign-in page was blocked. Close this window and try again.": {
+    "This sign-in page isn't supported. Try a personal Google account instead.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This sign-in page was blocked. Close this window and try again."
+            "value": "This sign-in page isn't supported. Try a personal Google account instead."
           }
         }
       }
