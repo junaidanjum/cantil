@@ -59,7 +59,7 @@ struct LoginWebView: NSViewRepresentable {
         func webView(
             _: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
-            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+            decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
         ) {
             // Popups have no visible origin bar. Do not open them or forward
             // credential-bearing URLs to another application.
@@ -80,7 +80,7 @@ struct LoginWebView: NSViewRepresentable {
         func webView(
             _: WKWebView,
             decidePolicyFor navigationResponse: WKNavigationResponse,
-            decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+            decisionHandler: @escaping @MainActor (WKNavigationResponsePolicy) -> Void
         ) {
             guard navigationResponse.canShowMIMEType,
                   LoginNavigationPolicy.allows(navigationResponse.response.url, isMainFrame: navigationResponse.isForMainFrame)

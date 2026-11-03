@@ -1,8 +1,17 @@
 import Foundation
 import Testing
+import WebKit
 @testable import Kaset
 
 struct LoginNavigationPolicyTests {
+    @Test
+    @MainActor
+    func webKitRecognizesNavigationCallbacks() {
+        let coordinator = LoginWebView.Coordinator(onNavigationToYouTubeMusic: nil)
+        #expect(coordinator.responds(to: NSSelectorFromString("webView:decidePolicyForNavigationAction:decisionHandler:")))
+        #expect(coordinator.responds(to: NSSelectorFromString("webView:decidePolicyForNavigationResponse:decisionHandler:")))
+    }
+
     @Test(arguments: [
         "https://accounts.google.com/ServiceLogin",
         "https://accounts.youtube.com/accounts/SetSID",

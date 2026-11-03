@@ -846,7 +846,7 @@ private final class SessionSwitchNavigationDriver: NSObject, WKNavigationDelegat
     func webView(
         _: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
     ) {
         let allowed = navigationAction.targetFrame != nil
             && !navigationAction.shouldPerformDownload
@@ -863,7 +863,7 @@ private final class SessionSwitchNavigationDriver: NSObject, WKNavigationDelegat
     func webView(
         _: WKWebView,
         decidePolicyFor navigationResponse: WKNavigationResponse,
-        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+        decisionHandler: @escaping @MainActor (WKNavigationResponsePolicy) -> Void
     ) {
         let allowed = navigationResponse.canShowMIMEType
             && LoginNavigationPolicy.allows(navigationResponse.response.url, isMainFrame: navigationResponse.isForMainFrame)
